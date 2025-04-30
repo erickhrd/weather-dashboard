@@ -40,7 +40,7 @@ app.prepare().then(() => {
     try {
       const weatherApi = dev
         ? "http://localhost:3001/api/weather"
-        : "https://weather-dashboard-no7s.onrender.com/api/weather"; // set this in production
+        : `${process.env.NEXT_PUBLIC_CLIENT_URL}/api/weather`; // set this in production
 
       const res = await fetch(weatherApi);
       const data = await res.json();
@@ -65,6 +65,9 @@ app.prepare().then(() => {
   }, 2000); // 2-second polling interval
 
   server.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
+    const protocol = dev ? "http" : "https";
+    const host = process.env.HOST || "localhost";
+    console.log(`Server running at ${protocol}://${host}:${PORT}`);
   });
+  
 });
