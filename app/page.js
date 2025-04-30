@@ -46,6 +46,7 @@ export default function Home() {
         console.error("❌ Socket connection failed:", err.message);
       });
       
+      console.log("WebSocket URL:", baseSocketUrl);
 
     socket.on("weatherUpdate", (newWeather) => {
       setWeatherData((prevData) => [newWeather, ...prevData.slice(0, 99)]);
