@@ -16,9 +16,7 @@ app.prepare().then(() => {
 
   const io = new Server(server, {
     cors: {
-      origin: dev
-        ? "http://localhost:3001"
-        : process.env.NEXT_PUBLIC_CLIENT_URL, // set this in production env
+      origin: process.env.NEXT_PUBLIC_CLIENT_URL, // set this in production env
       methods: ["GET", "POST"],
     },
   });
