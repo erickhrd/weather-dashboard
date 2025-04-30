@@ -11,12 +11,17 @@ const PORT = process.env.SERVER_PORT || 3002;
 
 app.prepare().then(() => {
   const server = createServer((req, res) => {
+    console.log("📡 HTTP Request received:", req.url);
     handle(req, res);
   });
 
+  console.log("🚀 Creating Socket.IO server with origin:", dev ? "http://localhost:3001" : process.env.NEXT_PUBLIC_CLIENT_URL);
+
   const io = new Server(server, {
     cors: {
-      origin: process.env.NEXT_PUBLIC_CLIENT_URL, // set this in production env
+      origin: dev
+        ? "http://localhost:3001"
+        : process.env.NEXT_PUBLIC_CLIENT_URL, // set this in production env
       methods: ["GET", "POST"],
     },
   });
@@ -32,7 +37,13 @@ app.prepare().then(() => {
       sockets.delete(socket);
       console.log("Client disconnected:", socket.id);
     });
-  });
+    socket.on("error", (err) => {
+        console.error("⚠️ Socket error:", err);
+      });
+  }
+);
+
+  
 
   setInterval(async () => {
     try {
