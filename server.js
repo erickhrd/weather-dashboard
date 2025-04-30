@@ -18,7 +18,7 @@ app.prepare().then(() => {
     cors: {
       origin: dev
         ? "http://localhost:3001"
-        : process.env.NEXT_PUBLIC_SOCKET_URL, // set this in production env
+        : process.env.NEXT_PUBLIC_CLIENT_URL, // set this in production env
       methods: ["GET", "POST"],
     },
   });
@@ -40,7 +40,7 @@ app.prepare().then(() => {
     try {
       const weatherApi = dev
         ? "http://localhost:3001/api/weather"
-        : `${process.env.NEXT_PUBLIC_SOCKET_URL}/api/weather`; // set this in production
+        : `${process.env.NEXT_PUBLIC_CLIENT_URL}/api/weather`; // set this in production
 
       const res = await fetch(weatherApi);
       const data = await res.json();
