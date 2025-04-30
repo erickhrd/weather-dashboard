@@ -37,7 +37,7 @@ export async function GET() {
         : null
       }));
 
-      return Response.json(convertedData.reverse(), { status: 200 });
+      return Response.json(convertedData, { status: 200 });
     } else {
       return Response.json({ message: "No data found" }, { status: 404 });
     }
