@@ -40,7 +40,7 @@ app.prepare().then(() => {
     try {
       const weatherApi = dev
         ? "http://localhost:3001/api/weather"
-        : `${process.env.NEXT_PUBLIC_CLIENT_URL}/api/weather`; // set this in production
+        : "https://weather-dashboard-no7s.onrender.com/api/weather"; // set this in production
 
       const res = await fetch(weatherApi);
       const data = await res.json();
