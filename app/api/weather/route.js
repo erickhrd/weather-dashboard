@@ -30,12 +30,26 @@ export async function GET() {
 
     if (resources.length > 0) {
       // Convert temperatures from Celsius to Fahrenheit
-      const convertedData = resources.map(item => ({
-        ...item,
-        temperature: item.temperature !== null && item.temperature !== undefined 
-        ? Math.round(((item.temperature * 9/5) + 32) * 10) / 10
-        : null
-      }));
+      const convertedData = resources.map(item => {
+        // Convert temperature from Celsius to Fahrenheit
+        const convertedItem = {
+          ...item,
+          temperature: item.temperature !== null && item.temperature !== undefined 
+            ? Math.round(((item.temperature * 9/5) + 32) * 10) / 10
+            : null
+        };
+
+        // Convert windSpeed and windGust from kph to mph
+        if (convertedItem.windSpeed !== null && convertedItem.windSpeed !== undefined) {
+          convertedItem.windSpeed = Math.round(convertedItem.windSpeed * 0.621371 * 10) / 10; // kph to mph
+        }
+
+        if (convertedItem.windGust !== null && convertedItem.windGust !== undefined) {
+          convertedItem.windGust = Math.round(convertedItem.windGust * 0.621371 * 10) / 10; // kph to mph
+        }
+
+        return convertedItem;
+      });
 
       return Response.json(convertedData, { status: 200 });
     } else {

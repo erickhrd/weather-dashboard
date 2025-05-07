@@ -71,8 +71,8 @@ export default function Home() {
             {latest && (
               <>
                 <WeatherCard title="Temperature" value={`${latest.temperature} °F`} />
-                <WeatherCard title="Wind Speed" value={`${latest.windSpeed} kph`} />
-                <WeatherCard title="Wind Gust" value={`${latest.windGust} kph`} />
+                <WeatherCard title="Wind Speed" value={`${latest.windSpeed} mph`} />
+                <WeatherCard title="Wind Gust" value={`${latest.windGust} mph`} />
                 <WeatherCard title="Wind Direction" value={`${latest.windDirection} °`} />
                 <WeatherCard title="Short Forecast" value={"N/A"} />
                 <WeatherCard title="Humidity" value={`${latest.relativeHumidity} %`} />

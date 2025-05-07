@@ -2,6 +2,8 @@
 const { createServer } = require("http");
 const { Server } = require("socket.io");
 const next = require("next");
+const { CosmosClient } = require("@azure/cosmos");
+require("dotenv").config();
 
 const dev = process.env.NODE_ENV !== "production";
 const app = next({ dev });
@@ -9,25 +11,29 @@ const handle = app.getRequestHandler();
 
 const PORT = process.env.PORT || 3002;
 
-app.prepare().then(() => {
+const cosmosClient = new CosmosClient({
+  endpoint: process.env.COSMOS_ENDPOINT,
+  key: process.env.COSMOS_KEY,
+});
+
+const database = cosmosClient.database("weatherReadings");
+const container = database.container("data");
+
+app.prepare().then(async () => {
   const server = createServer((req, res) => {
-    console.log("📡 HTTP Request received:", req.url);
     handle(req, res);
   });
-
-  console.log("🚀 Creating Socket.IO server with origin:", dev ? "http://localhost:3001" : process.env.NEXT_PUBLIC_CLIENT_URL);
 
   const io = new Server(server, {
     cors: {
       origin: dev
         ? "http://localhost:3001"
-        : process.env.NEXT_PUBLIC_CLIENT_URL, // set this in production env
+        : process.env.NEXT_PUBLIC_CLIENT_URL,
       methods: ["GET", "POST"],
     },
   });
 
   let sockets = new Set();
-  let lastTimestamp = null;
 
   io.on("connection", (socket) => {
     sockets.add(socket);
@@ -37,46 +43,54 @@ app.prepare().then(() => {
       sockets.delete(socket);
       console.log("Client disconnected:", socket.id);
     });
+
     socket.on("error", (err) => {
-        console.error("⚠️ Socket error:", err);
-      });
-  }
-);
+      console.error("⚠️ Socket error:", err);
+    });
+  });
 
-  
+  // === Cosmos DB Change Feed Setup ===
+  const startChangeFeedListener = async () => {
+    const iterator = container.items.getChangeFeedIterator({
+      startFromBeginning: true,
+      maxItemCount: 1,
+    });
 
-  setInterval(async () => {
-    try {
-      const weatherApi = dev
-        ? "http://localhost:3001/api/weather"
-        : `${process.env.NEXT_PUBLIC_CLIENT_URL}/api/weather`; // set this in production
+    console.log("📡 Listening to Cosmos DB Change Feed...");
 
-      const res = await fetch(weatherApi);
-      const data = await res.json();
+    for await (const page of iterator.getAsyncIterator()) {
+      for (const item of page.result) {
+        console.log("🔄 New change detected:", item);
 
-      if (!Array.isArray(data) || data.length === 0) return;
-
-      const latest = data[0];
-      console.log("Fetched latest timestamp:", latest.timestamp);
-      console.log("Last known timestamp:", lastTimestamp);
-
-
-      if (latest.timestamp !== lastTimestamp) {
-        lastTimestamp = latest.timestamp;
-        for (const socket of sockets) {
-          socket.emit("weatherUpdate", latest);
+        // Convert temperature from Celsius to Fahrenheit
+        if (item.temperature !== null && item.temperature !== undefined) {
+          item.temperature = Math.round(((item.temperature * 9/5) + 32) * 10) / 10; // Convert to Fahrenheit
         }
-        console.log("Broadcasted new weather data");
+
+        // Convert wind speed and gust from kph to mph
+        if (item.windSpeed !== null && item.windSpeed !== undefined) {
+          item.windSpeed = Math.round(item.windSpeed * 0.621371 * 10) / 10; // Convert kph to mph
+        }
+
+        if (item.windGust !== null && item.windGust !== undefined) {
+          item.windGust = Math.round(item.windGust * 0.621371 * 10) / 10; // Convert kph to mph
+        }
+
+        // Emit to all connected sockets with updated data
+        for (const socket of sockets) {
+          socket.emit("weatherUpdate", item);
+        }
       }
-    } catch (err) {
-      console.error("Polling error:", err.message);
     }
-  }, 2000); // 2-second polling interval
+  };
+
+  startChangeFeedListener().catch((err) =>
+    console.error("❌ Change Feed Error:", err)
+  );
 
   server.listen(PORT, () => {
     const protocol = dev ? "http" : "https";
     const host = process.env.HOST || "localhost";
-    console.log(`Server running at ${protocol}://${host}:${PORT}`);
+    console.log(`🚀 Server running at ${protocol}://${host}:${PORT}`);
   });
-  
 });
